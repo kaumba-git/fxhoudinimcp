@@ -16,6 +16,14 @@ from fxhoudinimcp.tools.scene import (
     new_scene,
 )
 from fxhoudinimcp.tools.workflows import setup_pyro_sim
+from fxhoudinimcp.tools.karma import (
+    create_karma_render_product,
+    get_karma_engine_mode,
+    get_karma_render_diagnostics,
+    set_karma_engine_mode,
+    setup_karma_cryptomatte,
+    setup_karma_standard_aovs,
+)
 
 
 class TestSceneTools:
@@ -145,4 +153,80 @@ class TestMaterialTools:
         mock_bridge.execute.assert_called_once_with(
             "materials.list_materials",
             {"root_path": "/mat"},
+        )
+
+
+class TestKarmaTools:
+    @pytest.mark.asyncio
+    async def test_get_karma_engine_mode(self, mock_ctx, mock_bridge):
+        await get_karma_engine_mode(mock_ctx, node_path="/out/karma1")
+        mock_bridge.execute.assert_called_once_with(
+            "karma.get_engine_mode", {"node_path": "/out/karma1"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_set_karma_engine_mode(self, mock_ctx, mock_bridge):
+        await set_karma_engine_mode(mock_ctx, node_path="/out/karma1", engine="xpu")
+        mock_bridge.execute.assert_called_once_with(
+            "karma.set_engine_mode", {"node_path": "/out/karma1", "engine": "xpu"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_karma_render_diagnostics(self, mock_ctx, mock_bridge):
+        await get_karma_render_diagnostics(mock_ctx, node_path="/out/karma1")
+        mock_bridge.execute.assert_called_once_with(
+            "karma.get_render_diagnostics", {"node_path": "/out/karma1"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_karma_render_product_minimal(self, mock_ctx, mock_bridge):
+        await create_karma_render_product(mock_ctx, parent_path="/stage")
+        mock_bridge.execute.assert_called_once_with(
+            "karma.create_render_product", {"parent_path": "/stage"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_karma_render_product_full(self, mock_ctx, mock_bridge):
+        await create_karma_render_product(
+            mock_ctx,
+            parent_path="/stage",
+            name="products1",
+            product_name="$HIP/render/beauty.exr",
+            camera_path="/cameras/cam1",
+        )
+        mock_bridge.execute.assert_called_once_with(
+            "karma.create_render_product",
+            {
+                "parent_path": "/stage",
+                "name": "products1",
+                "product_name": "$HIP/render/beauty.exr",
+                "camera_path": "/cameras/cam1",
+            },
+        )
+
+    @pytest.mark.asyncio
+    async def test_setup_karma_standard_aovs(self, mock_ctx, mock_bridge):
+        await setup_karma_standard_aovs(
+            mock_ctx, parent_path="/stage", aovs=["beauty", "diffuse"]
+        )
+        mock_bridge.execute.assert_called_once_with(
+            "karma.setup_standard_aovs",
+            {"parent_path": "/stage", "aovs": ["beauty", "diffuse"]},
+        )
+
+    @pytest.mark.asyncio
+    async def test_setup_karma_cryptomatte_default(self, mock_ctx, mock_bridge):
+        await setup_karma_cryptomatte(mock_ctx, parent_path="/stage")
+        mock_bridge.execute.assert_called_once_with(
+            "karma.setup_cryptomatte", {"parent_path": "/stage"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_setup_karma_cryptomatte_explicit_layers(self, mock_ctx, mock_bridge):
+        await setup_karma_cryptomatte(
+            mock_ctx, parent_path="/stage", layers=["object", "material"]
+        )
+        mock_bridge.execute.assert_called_once_with(
+            "karma.setup_cryptomatte",
+            {"parent_path": "/stage", "layers": ["object", "material"]},
         )

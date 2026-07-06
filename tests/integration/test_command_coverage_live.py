@@ -309,6 +309,70 @@ class TestRendering:
             assert result["status"] in ("success", "error")
 
 
+class TestKarmaModule:
+    def test_engine_mode_roundtrip(self, call):
+        rop = call(
+            "nodes.create_node", parent_path="/out", node_type="karma", name="k"
+        )["node_path"]
+        default = call("karma.get_engine_mode", node_path=rop)
+        assert default["engine"] == "cpu"
+        assert set(default["available_engines"]) == {"cpu", "xpu"}
+
+        switched = call("karma.set_engine_mode", node_path=rop, engine="xpu")
+        assert switched["engine"] == "xpu"
+        assert call("karma.get_engine_mode", node_path=rop)["engine"] == "xpu"
+
+        rejected = call(
+            "karma.set_engine_mode", node_path=rop, engine="bogus", allow_error=True
+        )
+        assert rejected["status"] == "error"
+
+    def test_render_diagnostics_reports_real_settings(self, call):
+        rop = call(
+            "nodes.create_node", parent_path="/out", node_type="karma", name="k2"
+        )["node_path"]
+        diag = call("karma.get_render_diagnostics", node_path=rop)
+        assert diag["engine"] == "cpu"
+        assert len(diag["resolution"]) == 2
+        assert diag["samples_per_pixel"] is not None
+        assert "threshold" in diag["variance_aa"]
+
+    def test_render_product_and_aovs_and_cryptomatte(self, call):
+        stage = call(
+            "nodes.create_node", parent_path="/obj", node_type="lopnet", name="karma_stage"
+        )["node_path"]
+
+        product = call(
+            "karma.create_render_product",
+            parent_path=stage,
+            product_name="$HIP/render/beauty.exr",
+        )
+        assert product["success"] is True
+        assert product["node_type"] == "karmarenderproducts"
+
+        aovs = call(
+            "karma.setup_standard_aovs",
+            parent_path=stage,
+            aovs=["beauty", "diffuse", "direct_diffuse", "not_a_real_aov"],
+        )
+        assert set(aovs["enabled_aovs"]) == {"beauty", "combineddiffuse", "directdiffuse"}
+        assert aovs["unknown_aovs"] == ["not_a_real_aov"]
+
+        crypto = call(
+            "karma.setup_cryptomatte",
+            parent_path=stage,
+            layers=["object", "material", "primitive", "primvar"],
+        )
+        assert set(crypto["enabled_layers"]) == {
+            "object", "material", "primitive", "primvar",
+        }
+
+        crypto_defaults = call("karma.setup_cryptomatte", parent_path=stage)
+        assert set(crypto_defaults["enabled_layers"]) == {
+            "primitive", "material", "kind",
+        }
+
+
 class TestViewportHeadless:
     """Every viewport command must degrade cleanly without a UI."""
 
