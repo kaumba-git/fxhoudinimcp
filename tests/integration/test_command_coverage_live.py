@@ -542,13 +542,13 @@ class TestMopUp:
         assert "{0,0,1}" in str(code)
         validated = call("vex.validate_vex", node_path=wrangle)
         assert validated["is_valid"] is True, validated
-        call(
+        expr = call(
             "vex.create_vex_expression",
-            node_path=wrangle,
+            node_path="/obj/g",
             parm_name="tx",
-            expression="@Frame",
-            allow_error=True,
+            vex_code="$FF",
         )
+        assert expr["success"] is True, expr
 
     def test_lops_and_materials_extras(self, call):
         lopnet = call(

@@ -102,12 +102,17 @@ async def create_vex_expression(
     parm_name: str,
     vex_code: str,
 ) -> dict:
-    """Set a VEX expression on a parameter.
+    """Set a channel expression on a parameter (Hscript or Python, not VEX).
+
+    Houdini parameters have no VEX expression language. This tries
+    Hscript first (e.g. "$FF"), falling back to Python. For actual VEX
+    code, use create_wrangle instead -- this tool is for simple
+    per-parameter channel expressions only.
 
     Args:
         node_path: Path to the node.
         parm_name: Parameter name.
-        vex_code: VEX expression code.
+        vex_code: Hscript (preferred) or Python expression code.
     """
     bridge = _get_bridge(ctx)
     return await bridge.execute(

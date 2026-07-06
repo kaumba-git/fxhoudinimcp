@@ -281,15 +281,18 @@ def create_vex_expression(
     parm_name: str,
     vex_code: str,
 ) -> dict:
-    """Set a VEX expression on a parameter.
+    """Set a channel expression on a parameter.
 
-    This sets the parameter's expression language to VEX and assigns
-    the given expression code.
+    Houdini parameters do not have a VEX expression language -- only
+    Hscript and Python. This tries Hscript first (e.g. "$FF" for the
+    current frame), falling back to Python. Despite the tool name, do
+    not pass raw VEX syntax (e.g. "@Frame") here; that belongs in a
+    wrangle (see create_wrangle), not a parameter expression.
 
     Args:
         node_path: Path to the node.
         parm_name: Name of the parameter.
-        vex_code: The VEX expression code.
+        vex_code: Hscript (preferred) or Python expression code.
     """
     node = _get_node(node_path)
 
